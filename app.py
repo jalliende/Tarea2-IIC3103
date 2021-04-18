@@ -217,15 +217,26 @@ def put_album(album_ID):
 @app.route('/albums/<album_ID>/tracks', methods=['POST'])
 def post_track(album_ID):
     json_data = request.json
+
     if json_data ==None:
-        return jsonify({"ERROR": "no JSON found."})
+        return '', 400 #input invalido
 
     name = json_data["name"]
     duration = json_data["duration"]
-    album_ID = album_ID
-    times_played = 0 ##Esto es 0 solo si recien fue creada
+
+    if type(name)!=str or (type(duration)!=float and type(duration)!=int): ###ACA ESTOY CONSIDERANDO QUE PUEDE SER INT O FLOAT, creo que solo deberia ser float
+        return '', 400 #input invalido
+
+    if album_ID not in albums.keys()
+        return '', 422 #album no existe
+
+    times_played = 0
     id_pre_cod= f"{name}:{album_ID}"
-    ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]    
+    ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]
+    
+    if ID in tracks.keys():
+        return jsonify(tracks[ID]), 409 #Cancion ya existe
+
     Self = f"{link}/tracks/{ID}"
     album = f"{link}/albums/{album_ID}"
     artist_ID=albums[album_ID]["artist_id"]
@@ -234,12 +245,88 @@ def post_track(album_ID):
     #hacer if si ya existe
     tracks[ID] = {"id": ID, "album_id": album_ID, "name" : name, "duration" : duration,"times_played": times_played, "self": Self, "artist" : artist, "album" : album}
 
-    if tracks[ID]:
-        return jsonify(tracks[ID])
+    return jsonify(tracks[ID]), 201 #cancion creada
+
+#get de un track
+@app.route('/tracks/<track_ID>', methods=['GET'])
+def get_track(track_ID):
+
+    if track_ID not in tracks.keys():
+         return '', 404 #cancion no encontrada
+
+    track = tracks[track_ID]
+    return jsonify(track), 200 #cancion encontrada
+    
+
+
+#get de todos los tracks
+@app.route('/tracks', methods=['GET'])
+def get_tracks():
+
+    track = list(tracks.values())
+
+    return jsonify(track), 200 #No falla, retorna todos los tracks
+
+
+#get de todos los tracks de un artista
+@app.route('/artists/<artist_ID>/tracks', methods=['GET'])
+def get_tracks_of_artist(artist_ID):
+
+    if artist_ID not in artists.keys():
+        return '', 404 #Artista no encontrado
+
+    track = list(tracks.values())
+    tracks_artista =[]
+    for cancion in track:
+        if albums[cancion["album_id"]]["artist_id"] == artist_ID:
+            tracks_artista.append(cancion)
+
+    
+    return jsonify(tracks_artista), 200 #Resultados obtenidos
+
+
+#get de todos los tracks de un album
+@app.route('/albums/<album_ID>/tracks', methods=['GET'])
+def get_tracks_of_album(album_ID):
+
+    if album_ID not in albums.keys():
+        return '', 404 #Album no encontrado
+
+    track = list(tracks.values())
+    tracks_album =[]
+    for cancion in track:
+        if cancion["album_id"] == album_ID:
+            tracks_album.append(cancion)
+
+    
+    return jsonify(tracks_album), 200 #resultados obtenidos
+
+
+
+#DELETE de un track
+@app.route('/tracks/<track_ID>', methods=['DELETE'])
+def delete_track(track_ID):
+
+    if track_ID in tracks.keys():
+        del tracks[track_ID]
+
+        return '', 204 #cancion eliminada
+
     else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
+        return '', 404 #cancion inexistente
+
+#PUT de un track
+@app.route('/tracks/<track_ID>/play', methods=['PUT'])
+def put_track(track_ID):
+
+    if track_ID in tracks.keys():
+        tracks[track_ID]["times_played"]+=1
+
+        return '', 200 #Cancion reporducida
+
+    else:
+        return '', 404 #cancion no encontrada
+
 
 
 # A welcome message to test our server
