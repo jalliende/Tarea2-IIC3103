@@ -1,6 +1,0 @@
-
-
-
-a= {}
-
-print(a.values())
