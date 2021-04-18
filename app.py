@@ -217,17 +217,36 @@ def put_album(album_ID):
 @app.route('/albums/<album_ID>/tracks', methods=['POST'])
 def post_track(album_ID):
     json_data = request.json
+
     if json_data ==None:
         return '', 400 #input invalido
 
     name = json_data["name"]
     duration = json_data["duration"]
 
-    if type(name)!=str or type(duration)!=float):
+    if type(name)!=str or (type(duration)!=float and type(duration)!=int): ###ACA ESTOY CONSIDERANDO QUE PUEDE SER INT O FLOAT, creo que solo deberia ser float
         return '', 400 #input invalido
 
-    if album_ID not in albums.keys()
+    if album_ID not in albums.keys():
         return '', 422 #album no existe
+
+    times_played = 0
+    id_pre_cod= f"{name}:{album_ID}"
+    ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]
+    
+    if ID in tracks.keys():
+        return jsonify(tracks[ID]), 409 #Cancion ya existe
+
+    Self = f"{link}/tracks/{ID}"
+    album = f"{link}/albums/{album_ID}"
+    artist_ID=albums[album_ID]["artist_id"]
+    artist = f"{link}/artists/{artist_ID}"
+
+    #hacer if si ya existe
+    tracks[ID] = {"id": ID, "album_id": album_ID, "name" : name, "duration" : duration,"times_played": times_played, "self": Self, "artist" : artist, "album" : album}
+
+    return jsonify(tracks[ID]), 201 #cancion creada
+
         
 
 
