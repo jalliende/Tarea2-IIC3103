@@ -218,28 +218,17 @@ def put_album(album_ID):
 def post_track(album_ID):
     json_data = request.json
     if json_data ==None:
-        return jsonify({"ERROR": "no JSON found."})
+        return '', 400 #input invalido
 
     name = json_data["name"]
     duration = json_data["duration"]
-    album_ID = album_ID
-    times_played = 0 ##Esto es 0 solo si recien fue creada
-    id_pre_cod= f"{name}:{album_ID}"
-    ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]    
-    Self = f"{link}/tracks/{ID}"
-    album = f"{link}/albums/{album_ID}"
-    artist_ID=albums[album_ID]["artist_id"]
-    artist = f"{link}/artists/{artist_ID}"
 
-    #hacer if si ya existe
-    tracks[ID] = {"id": ID, "album_id": album_ID, "name" : name, "duration" : duration,"times_played": times_played, "self": Self, "artist" : artist, "album" : album}
+    if type(name)!=str or type(duration)!=float):
+        return '', 400 #input invalido
 
-    if tracks[ID]:
-        return jsonify(tracks[ID])
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
+    if album_ID not in albums.keys()
+        return '', 422 #album no existe
+        
 
 
 # A welcome message to test our server
