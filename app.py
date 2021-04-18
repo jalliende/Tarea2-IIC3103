@@ -8,7 +8,8 @@ app = Flask(__name__)
 #app.config["DEBUG"] = True
 
 
-
+link= "https://tarea2jalliende.herokuapp.com"
+#link="http://127.0.0.1:5000"
 artists={}
 albums={}
 tracks={}
@@ -18,14 +19,21 @@ tracks={}
 # Post de artista
 @app.route('/artists', methods=['POST'])
 def post_artist():
-    link= request.base_url
     json_data = request.json
     if json_data ==None:
-        return jsonify({"ERROR": "no JSON found."})
+        return '', 400 #input invalido
 
     name = json_data["name"]
     age = json_data["age"]
-    ID = b64encode(name.encode()).decode('utf-8')[0:22]  
+
+    if type(name)!=str or type(age)!=int:
+        return '', 400    #input invalido
+
+    ID = b64encode(name.encode()).decode('utf-8')[0:22]
+
+    if ID in artists.keys():
+        return jsonify(artists[ID]) , 409 #Artista ya existe
+
     albums = f"{link}/artists/{ID}/albums"
     tracks = f"{link}/artists/{ID}/tracks"
     Self = f"{link}/artists/{ID}"
@@ -33,12 +41,7 @@ def post_artist():
     #hacer if si ya existe
     artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albums, "tracks" : tracks, "self" : Self}
 
-    if artists[ID]:
-        return jsonify(artists[ID])
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
+    return jsonify(artists[ID]) , 201 #exitoso
 
 
 #get de artista
@@ -74,7 +77,6 @@ def get_artists():
 # Post de albumes
 @app.route('/artists/<artist_ID>/albums', methods=['POST'])
 def post_album(artist_ID):
-    link= request.base_url
     json_data = request.json
     if json_data ==None:
         return jsonify({"ERROR": "no JSON found."})
@@ -131,7 +133,6 @@ def get_albums():
 # Post de tracks
 @app.route('/albums/<album_ID>/tracks', methods=['POST'])
 def post_track(album_ID):
-    link= request.base_url
     json_data = request.json
     if json_data ==None:
         return jsonify({"ERROR": "no JSON found."})
@@ -161,7 +162,6 @@ def post_track(album_ID):
 # A welcome message to test our server
 @app.route('/')
 def index():
-    link= request.base_url
     return f"<h1>Welcome to {link} our server !!</h1>"
 
 if __name__ == '__main__':
