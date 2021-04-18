@@ -25,7 +25,15 @@ def post_artist():
 
     name = json_data["name"]
     age = json_data["age"]
-    ID = b64encode(name.encode()).decode('utf-8')[0:22]  
+
+    if type(name)!=str or type(age)!=int:
+        return '', 400    #input invalido
+
+    ID = b64encode(name.encode()).decode('utf-8')[0:22]
+
+    if ID in artists.keys():
+        return jsonify(artists[ID]) , 409 #Artista ya existe
+
     albums = f"{link}/artists/{ID}/albums"
     tracks = f"{link}/artists/{ID}/tracks"
     Self = f"{link}/artists/{ID}"
@@ -33,36 +41,28 @@ def post_artist():
     #hacer if si ya existe
     artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albums, "tracks" : tracks, "self" : Self}
 
-    if artists[ID]:
-        return jsonify(artists[ID]) ,200 #con esto cambio el codigo
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
-
+    return jsonify(artists[ID]) , 201 #exitoso
+   
 
 #get de artista
 @app.route('/artists/<artist_ID>', methods=['GET'])
 def get_artist(artist_ID):
 
+    if artist_ID not in artists.keys():
+        return '' , 404 #artista no encontrado
+    
     artista = artists[artist_ID]
-    if artista:
-        return jsonify(artista)
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
-
+    return jsonify(artista), 200 #exitoso
+    
 
 #get de artistas
 @app.route('/artists', methods=['GET'])
 def get_artists():
 
     artista = list(artists.values())
-    if artista:
-        return jsonify(artista)
-    else:
-        return jsonify({})
+    
+    return jsonify(artista), 200 #Siempre retorna exitoso
+
 
 
 #DELETE de un artista
@@ -82,14 +82,10 @@ def delete_artist(artist_ID):
 
         del artists[artist_ID]
 
-        return jsonify({
-            "BIEN": "artista eliminado exitosamente"
-        })
+        return '', 204 #Artista Eliminado
 
     else:
-        return jsonify({
-            "ERROR": "No existe ese album"
-        })
+        return '', 404 #Artista inexistente
 
 
 #PUT de un artista
@@ -102,15 +98,10 @@ def put_artist(artist_ID):
             if albums[cancion["album_id"]]["artist_id"] == artist_ID:
                 tracks[cancion["id"]]["times_played"]+=1
 
-        return jsonify({
-            "BIEN": "artista reproducido exitosamente"
-        })
+        return '', 200 #Todas las canciones del artista fueron reproducidas
 
     else:
-        return jsonify({
-            "ERROR": "No existe ese album"
-        })
-
+        return '', 404 #Artista no encontrado
 
 ###########################ALBUMES###########################################
 
@@ -124,35 +115,38 @@ def post_album(artist_ID):
 
     name = json_data["name"]
     genre = json_data["genre"]
-    artist_ID = artist_ID
+
+    if type(name) != str or type(genre)!= str:
+        return '', 400 #input invalido
+
+
+    if artist_ID not in artists.keys():
+        return '', 422 #Artista no existe
+
     id_pre_cod= f"{name}:{artist_ID}"
-    ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]    
+    ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]
+
+    if ID in albums.keys():
+        return jsonify(albums[ID]), 409 #Albumn ya existe
+
     Self = f"{link}/albums/{ID}"
     tracks = f"{link}/albums/{ID}/tracks"
     artist = f"{link}/artists/{artist_ID}"
 
-    #hacer if si ya existe
     albums[ID] = {"id": ID, "name" : name, "genre" : genre, "self": Self, "tracks" : tracks, "artist" : artist, "artist_id" : artist_ID}
 
-    if albums[ID]:
-        return jsonify(albums[ID])
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
+    return jsonify(albums[ID]), 201 #album creado
 
 
 #get de album
 @app.route('/albums/<album_ID>', methods=['GET'])
 def get_album(album_ID):
 
+    if album_ID not in albums.keys():
+        return '', 404 #album no encontrado
+
     album = albums[album_ID]
-    if album:
-        return jsonify(album)
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
+    return jsonify(album), 200 #Get exitoso
 
 
 #get de todos los albumes
@@ -160,27 +154,24 @@ def get_album(album_ID):
 def get_albums():
 
     album = list(albums.values())
-    if album:
-        return jsonify(album)
-    else:
-        return jsonify({})
-
+    
+    return jsonify(album), 200 #exitoso, este no falla
+   
 
 #get de todos los albumes de un artista
 @app.route('/artists/<artist_ID>/albums', methods=['GET'])
 def get_albums_of_artist(artist_ID):
+
+    if artist_ID not in artists.keys():
+        return '', 404 #artista no encontrado
+
     album = list(albums.values())
     albumes_artista =[]
     for elemento in album:
         if elemento["artist_id"] == artist_ID:
             albumes_artista.append(elemento)
 
-    if albumes_artista:
-        return jsonify(albumes_artista)
-    else:
-        return jsonify({
-            "ERROR": "no hay albumes de este artista"
-        })
+    return jsonify(albumes_artista), 200 #Se encontraron todos los albumes
 
 
 #DELETE de un album
