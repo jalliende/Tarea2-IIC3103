@@ -48,26 +48,61 @@ def post_artist():
 @app.route('/artists/<artist_ID>', methods=['GET'])
 def get_artist(artist_ID):
 
+    if artist_ID not in artists.keys():
+        return '' , 404 #artista no encontrado
+    
     artista = artists[artist_ID]
-    if artista:
-        return jsonify(artista)
-    else:
-        return jsonify({
-            "ERROR": "no name found, please send a name."
-        })
+    return jsonify(artista), 200 #exitoso
 
 
-#get de artista
+
+#get de artistas
 @app.route('/artists', methods=['GET'])
 def get_artists():
 
     artista = list(artists.values())
-    if artista:
-        return jsonify(artista)
+    
+    return jsonify(artista), 200 #Siempre retorna exitoso
+
+
+#DELETE de un artista
+@app.route('/artists/<artist_ID>', methods=['DELETE'])
+def delete_artist(artist_ID):
+
+    if artist_ID in artists.keys():
+        todos_albumes= list(albums.values())
+        todas_canciones = list(tracks.values())
+        for cancion in todas_canciones:
+            if albums[cancion["album_id"]]["artist_id"] == artist_ID:
+                del tracks[cancion["id"]]
+        
+        for album in todos_albumes:
+            if album['artist_id']==artist_ID:
+                del albums[album["id"]]
+
+        del artists[artist_ID]
+
+        return '', 204 #Artista Eliminado
+
     else:
-        return jsonify({
-            "ERROR": "no hay artistas existentes"
-        })
+        return '', 404 #Artista inexistente
+
+
+#PUT de un artista
+@app.route('/artists/<artist_ID>/albums/play', methods=['PUT'])
+def put_artist(artist_ID):
+
+    if artist_ID in artists.keys():
+        todas_canciones = list(tracks.values())
+        for cancion in todas_canciones:
+            if albums[cancion["album_id"]]["artist_id"] == artist_ID:
+                tracks[cancion["id"]]["times_played"]+=1
+
+        return '', 200 #Todas las canciones del artista fueron reproducidas
+
+    else:
+        return '', 404 #Artista no encontrado
+
 
 
 
