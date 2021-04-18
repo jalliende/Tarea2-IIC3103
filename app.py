@@ -323,6 +323,12 @@ def put_track(track_ID):
         return '', 404 #cancion no encontrada
 
 
+# A welcome message to test our server
+@app.route('/')
+def index():
+    return f"<h1>Welcome to {link} our server !!</h1>"
+
+
 if __name__ == '__main__':
     # Threaded option to enable multiple instances for multiple user access support
     app.run(threaded=True, port=5000)
