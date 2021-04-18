@@ -8,8 +8,8 @@ app = Flask(__name__)
 #app.config["DEBUG"] = True
 
 
-#link= "https://tarea2jalliende.herokuapp.com"
-link="http://127.0.0.1:5000"
+link= "https://tarea2jalliende.herokuapp.com"
+#link="http://127.0.0.1:5000"
 artists={}
 albums={}
 tracks={}
