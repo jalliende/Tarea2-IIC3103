@@ -34,11 +34,11 @@ def post_artist():
     if ID in artists.keys():
         return jsonify(artists[ID]) , 409 #Artista ya existe
 
-    albums = f"{link}/artists/{ID}/albums"
-    tracks = f"{link}/artists/{ID}/tracks"
+    albu = f"{link}/artists/{ID}/albums"
+    trac = f"{link}/artists/{ID}/tracks"
     Self = f"{link}/artists/{ID}"
 
-    artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albums, "tracks" : tracks, "self" : Self}
+    artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albu, "tracks" : trac, "self" : Self}
 
     return jsonify(artists[ID]) , 201 #exitoso
 
@@ -59,7 +59,7 @@ def get_artist(artist_ID):
 @app.route('/artists', methods=['GET'])
 def get_artists():
 
-    artista = list(artists.values())
+    artistas = list(artists.values())
     
     return jsonify(artista), 200 #Siempre retorna exitoso
 
@@ -132,10 +132,10 @@ def post_album(artist_ID):
         return jsonify(albums[ID]), 409 #Albumn ya existe
 
     Self = f"{link}/albums/{ID}"
-    tracks = f"{link}/albums/{ID}/tracks"
+    trac = f"{link}/albums/{ID}/tracks"
     artist = f"{link}/artists/{artist_ID}"
 
-    albums[ID] = {"id": ID, "name" : name, "genre" : genre, "self": Self, "tracks" : tracks, "artist" : artist, "artist_id" : artist_ID}
+    albums[ID] = {"id": ID, "name" : name, "genre" : genre, "self": Self, "tracks" : trac, "artist" : artist, "artist_id" : artist_ID}
 
     return jsonify(albums[ID]), 201 #album creado
 
