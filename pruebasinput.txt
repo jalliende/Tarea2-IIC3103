@@ -1,0 +1,72 @@
+
+
+#Artistas
+{
+  "name": "Joaquin Alliende",
+  "age": 22
+}
+
+{
+  "name": "Michael Jackson",
+  "age": 21
+}
+
+{
+  "name": "Drogba",
+  "age": 40
+}
+
+
+#Albumes:
+{
+  "name": "Munich",
+  "genre": "King"
+}
+
+{
+  "name": "Off the Wall",
+  "genre": "Pop"
+}
+
+{
+  "name": "Thriller",
+  "genre": "Pop"
+}
+
+{
+  "name": "Psu",
+  "genre": "Pop"
+}
+
+
+#Tracks
+
+#Wall
+{
+  "name": "Don't Stop 'Til You Get Enough",
+  "duration": 4
+}
+
+{
+  "name": "American",
+  "duration": 6
+}
+
+#Thriller
+{
+  "name": "Thriller 2.0",
+  "duration": 8
+}
+
+
+#Munich
+{
+  "name": "Golazo de cabeza",
+  "duration": 2
+}
+
+#psu
+{
+  "name": "Soy un pw",
+  "duration": 1
+}

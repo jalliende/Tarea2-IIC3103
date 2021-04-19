@@ -8,8 +8,8 @@ app = Flask(__name__)
 #app.config["DEBUG"] = True
 
 
-link= "https://tarea2jalliende.herokuapp.com"
-#link="http://127.0.0.1:5000"
+#link= "https://tarea2jalliende.herokuapp.com"
+link="http://127.0.0.1:5000"
 artists={}
 albums={}
 tracks={}
@@ -38,7 +38,6 @@ def post_artist():
     tracks = f"{link}/artists/{ID}/tracks"
     Self = f"{link}/artists/{ID}"
 
-    #hacer if si ya existe
     artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albums, "tracks" : tracks, "self" : Self}
 
     return jsonify(artists[ID]) , 201 #exitoso
@@ -336,4 +335,4 @@ def index():
     return f"<h1>Welcome to {link} our server !!</h1>"
 
 if __name__ == '__main__':
-    app.run(threaded=False)
+    app.run()
