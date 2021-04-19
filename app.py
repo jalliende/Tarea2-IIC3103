@@ -61,7 +61,7 @@ def get_artists():
 
     artistas = list(artists.values())
     
-    return jsonify(artista), 200 #Siempre retorna exitoso
+    return jsonify(artistas), 200 #Siempre retorna exitoso
 
 
 #DELETE de un artista
