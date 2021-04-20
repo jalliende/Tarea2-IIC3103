@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify
 from base64 import b64encode
 from markupsafe import escape
+import sqlite3
+
 
 
 app = Flask(__name__)
-
-#app.config["DEBUG"] = True
+app.config["DEBUG"] = True
 
 
 #link= "https://tarea2jalliende.herokuapp.com"
@@ -19,6 +20,10 @@ tracks={}
 # Post de artista
 @app.route('/artists', methods=['POST'])
 def post_artist():
+    columnas= ("id","name","age","self","albums","tracks")
+
+    conn = sqlite3.connect('spotify.db')
+
     json_data = request.json
     if json_data ==None:
         return '', 400 #input invalido
@@ -31,12 +36,30 @@ def post_artist():
 
     ID = b64encode(name.encode()).decode('utf-8')[0:22]
 
-    if ID in artists.keys():
-        return jsonify(artists[ID]) , 409 #Artista ya existe
+    query= """SELECT * FROM ARTIST WHERE id=? ;"""
+
+    cursor = conn.cursor()
+    artistas = cursor.execute(query, (ID,)).fetchone()
+    print(type(artistas))
+
+
+    if artistas:
+        zip_iterator = zip(columnas, artistas)
+        a_dictionary = dict(zip_iterator)
+        
+        return jsonify(a_dictionary) , 409 #Artista ya existe
 
     albu = f"{link}/artists/{ID}/albums"
     trac = f"{link}/artists/{ID}/tracks"
     Self = f"{link}/artists/{ID}"
+
+
+    
+    query= """INSERT INTO ARTIST (id, name, age, Self, albums, tracks) VALUES (?, ?, ?, ?, ?, ?)"""
+    record = (ID, name, age, Self, albu, trac)
+    cursor.execute(query, record)
+    conn.commit()
+    
 
     artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albu, "tracks" : trac, "self" : Self}
 
