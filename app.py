@@ -9,19 +9,15 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 
 
-#link= "https://tarea2jalliende.herokuapp.com"
-link="http://127.0.0.1:5000"
-artists={}
-albums={}
-tracks={}
+
 
 
 ###########################ARTISTAS###########################################
 # Post de artista
 @app.route('/artists', methods=['POST'])
 def post_artist():
+    link= "https://tarea2jalliende.herokuapp.com"
     columnas= ("id","name","age","self","albums","tracks")
-
     conn = sqlite3.connect('spotify.db')
 
     json_data = request.json
@@ -131,6 +127,7 @@ def delete_artist(artist_ID):
 #PUT de un artista
 @app.route('/artists/<artist_ID>/albums/play', methods=['PUT'])
 def put_artist(artist_ID):
+    link= "https://tarea2jalliende.herokuapp.com"
     conn = sqlite3.connect('spotify.db')
     query= """SELECT * FROM ARTIST WHERE id=? ;"""
     cursor = conn.cursor()
@@ -160,6 +157,7 @@ def put_artist(artist_ID):
 # Post de albumes
 @app.route('/artists/<artist_ID>/albums', methods=['POST'])
 def post_album(artist_ID):
+    link= "https://tarea2jalliende.herokuapp.com"
     columnas= ("id","name","genre","self","artist","tracks" , "artist_id")
     conn = sqlite3.connect('spotify.db')
 
@@ -340,6 +338,7 @@ def put_album(album_ID):
 # Post de tracks
 @app.route('/albums/<album_ID>/tracks', methods=['POST'])
 def post_track(album_ID):
+    link= "https://tarea2jalliende.herokuapp.com"
     columnas= ("id","name","duration","times_played", "artist", "album","self", "album_id")
 
 
@@ -444,9 +443,10 @@ def get_tracks():
 
 
 
-#get de todos los tracks de un artista   #FALTA ESTE TAMBIEN
+#get de todos los tracks de un artista
 @app.route('/artists/<artist_ID>/tracks', methods=['GET'])
 def get_tracks_of_artist(artist_ID):
+    link= "https://tarea2jalliende.herokuapp.com"
     conn = sqlite3.connect('spotify.db')
     query= """SELECT * FROM ARTIST WHERE id=? ;"""
     cursor = conn.cursor()
@@ -545,6 +545,7 @@ def put_track(track_ID):
 # A welcome message to test our server
 @app.route('/')
 def index():
+    link= "https://tarea2jalliende.herokuapp.com"
     return f"<h1>Welcome to {link} our server !!</h1>"
 
 if __name__ == '__main__':
