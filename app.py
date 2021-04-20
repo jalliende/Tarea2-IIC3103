@@ -26,12 +26,14 @@ def post_artist():
 
     json_data = request.json
     if json_data ==None:
+        conn.close()
         return '', 400 #input invalido
 
     name = json_data["name"]
     age = json_data["age"]
 
     if type(name)!=str or type(age)!=int:
+        conn.close()
         return '', 400    #input invalido
 
     ID = b64encode(name.encode()).decode('utf-8')[0:22]
@@ -40,12 +42,11 @@ def post_artist():
 
     cursor = conn.cursor()
     artistas = cursor.execute(query, (ID,)).fetchone()
-    print(type(artistas))
-
 
     if artistas:
         zip_iterator = zip(columnas, artistas)
         a_dictionary = dict(zip_iterator)
+        conn.close()
         
         return jsonify(a_dictionary) , 409 #Artista ya existe
 
@@ -59,50 +60,67 @@ def post_artist():
     record = (ID, name, age, Self, albu, trac)
     cursor.execute(query, record)
     conn.commit()
-    
-
-    artists[ID] = {"id": ID, "name" : name, "age" : age, "albums": albu, "tracks" : trac, "self" : Self}
-
-    return jsonify(artists[ID]) , 201 #exitoso
+    conn.close()
+    return jsonify({"id": ID, "name" : name, "age" : age, "albums": albu, "tracks" : trac, "self" : Self}) , 201 #exitoso
 
 
 #get de artista
 @app.route('/artists/<artist_ID>', methods=['GET'])
 def get_artist(artist_ID):
-
-    if artist_ID not in artists.keys():
-        return '' , 404 #artista no encontrado
+    conn = sqlite3.connect('spotify.db')
+    columnas= ("id","name","age","self","albums","tracks")
+    query= """SELECT * FROM ARTIST WHERE id=? ;"""
     
-    artista = artists[artist_ID]
-    return jsonify(artista), 200 #exitoso
+    cursor = conn.cursor()
+    artistas = cursor.execute(query, (artist_ID,)).fetchone()
+
+    if artistas:
+        zip_iterator = zip(columnas, artistas)
+        a_dictionary = dict(zip_iterator)
+        conn.close()
+        return jsonify(a_dictionary) , 200 #exitoso
+    
+    conn.close()
+    return '', 404 #No existe
 
 
 
 #get de artistas
 @app.route('/artists', methods=['GET'])
 def get_artists():
-
-    artistas = list(artists.values())
+    conn = sqlite3.connect('spotify.db')
+    columnas= ("id","name","age","self","albums","tracks")
+    query= """SELECT * FROM ARTIST;"""
     
-    return jsonify(artistas), 200 #Siempre retorna exitoso
+    cursor = conn.cursor()
+    artistas = cursor.execute(query).fetchall()
+    lista_artistas= []
+
+    for elemento in artistas:
+        zip_iterator = zip(columnas, elemento)
+        a_dictionary = dict(zip_iterator)
+        lista_artistas.append(a_dictionary)
+
+    conn.close()
+    return jsonify(lista_artistas), 200 #Siempre retorna exitoso
 
 
 #DELETE de un artista
 @app.route('/artists/<artist_ID>', methods=['DELETE'])
 def delete_artist(artist_ID):
 
-    if artist_ID in artists.keys():
-        todos_albumes= list(albums.values())
-        todas_canciones = list(tracks.values())
-        for cancion in todas_canciones:
-            if albums[cancion["album_id"]]["artist_id"] == artist_ID:
-                del tracks[cancion["id"]]
-        
-        for album in todos_albumes:
-            if album['artist_id']==artist_ID:
-                del albums[album["id"]]
+    conn = sqlite3.connect('spotify.db')
+    conn.execute("PRAGMA foreign_keys = ON")
+    columnas= ("id","name","age","self","albums","tracks")
+    query= """SELECT * FROM ARTIST WHERE id=? ;"""
 
-        del artists[artist_ID]
+    cursor = conn.cursor()
+    artistas = cursor.execute(query, (artist_ID,)).fetchone()
+
+    if artistas:
+        query_2= """DELETE FROM ARTIST WHERE id=? ;"""
+        cursor.execute(query_2, (artist_ID,))
+        conn.commit()
 
         return '', 204 #Artista Eliminado
 
@@ -113,18 +131,26 @@ def delete_artist(artist_ID):
 #PUT de un artista
 @app.route('/artists/<artist_ID>/albums/play', methods=['PUT'])
 def put_artist(artist_ID):
+    conn = sqlite3.connect('spotify.db')
+    query= """SELECT * FROM ARTIST WHERE id=? ;"""
+    cursor = conn.cursor()
+    artist = cursor.execute(query, (artist_ID,)).fetchone()
 
-    if artist_ID in artists.keys():
-        todas_canciones = list(tracks.values())
-        for cancion in todas_canciones:
-            if albums[cancion["album_id"]]["artist_id"] == artist_ID:
-                tracks[cancion["id"]]["times_played"]+=1
 
-        return '', 200 #Todas las canciones del artista fueron reproducidas
-
-    else:
+    if not artist:
+        conn.commit()
         return '', 404 #Artista no encontrado
 
+    query= """SELECT id, times_played FROM TRACK WHERE artist=? ;"""
+    tracks = cursor.execute(query, (f"{link}/artists/{artist_ID}",)).fetchall()
+
+    for cancion in tracks:
+        times_played= cancion[1] + 1
+        query_2= '''UPDATE TRACK SET times_played = ? WHERE id = ?;'''
+        cursor.execute(query_2, (times_played, cancion[0],))
+        conn.commit()
+    
+    return '', 200 #Artista reproducido
 
 
 
@@ -134,56 +160,103 @@ def put_artist(artist_ID):
 # Post de albumes
 @app.route('/artists/<artist_ID>/albums', methods=['POST'])
 def post_album(artist_ID):
+    columnas= ("id","name","genre","self","artist","tracks" , "artist_id")
+    conn = sqlite3.connect('spotify.db')
+
+
     json_data = request.json
     if json_data ==None:
+        conn.close()
         return '', 400 #input invalido
 
     name = json_data["name"]
     genre = json_data["genre"]
 
     if type(name) != str or type(genre)!= str:
+        conn.close()
         return '', 400 #input invalido
 
+    query= """SELECT * FROM ARTIST WHERE id=? ;"""
+    cursor = conn.cursor()
+    artistas = cursor.execute(query, (artist_ID,)).fetchone()
 
-    if artist_ID not in artists.keys():
-        return '', 422 #Artista no existe
+    if not artistas:
+        conn.close()
+        return '' , 422 #Artista no existente
+
+
 
     id_pre_cod= f"{name}:{artist_ID}"
     ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]
 
-    if ID in albums.keys():
-        return jsonify(albums[ID]), 409 #Albumn ya existe
+    query= """SELECT * FROM ALBUM WHERE id=? ;"""
+    cursor = conn.cursor()
+    albums = cursor.execute(query, (ID,)).fetchone()
+
+    if albums:
+        zip_iterator = zip(columnas, albums)
+        a_dictionary = dict(zip_iterator)
+        conn.close()
+        return jsonify(a_dictionary), 409 #Album ya existe
+
 
     Self = f"{link}/albums/{ID}"
     trac = f"{link}/albums/{ID}/tracks"
     artist = f"{link}/artists/{artist_ID}"
 
-    albums[ID] = {"id": ID, "name" : name, "genre" : genre, "self": Self, "tracks" : trac, "artist" : artist, "artist_id" : artist_ID}
+    query= """INSERT INTO ALBUM (id, name, genre, self, artist, tracks, artist_id) VALUES (?, ?, ?, ?, ?, ?, ?)"""
+    record = (ID, name, genre, Self, artist, trac, artist_ID)
+    cursor.execute(query, record)
+    conn.commit()
+    conn.close()
 
-    return jsonify(albums[ID]), 201 #album creado
+    return jsonify({"id": ID, "name" : name, "genre" : genre, "self": Self, "tracks" : trac, "artist" : artist, "artist_id" : artist_ID}), 201 #album creado
 
 
 #get de album
 @app.route('/albums/<album_ID>', methods=['GET'])
 def get_album(album_ID):
 
-    if album_ID not in albums.keys():
-        return '', 404 #album no encontrado
+    conn = sqlite3.connect('spotify.db')
+    columnas= ("id","name","genre","self","artist","tracks" , "artist_id")
+    query= """SELECT * FROM ALBUM WHERE id=? ;"""
 
-    album = albums[album_ID]
-    return jsonify(album), 200 #Get exitoso
+    cursor = conn.cursor()
+    album = cursor.execute(query, (album_ID,)).fetchone()
+
+    if album:
+        zip_iterator = zip(columnas, album)
+        a_dictionary = dict(zip_iterator)
+        conn.close()
+
+        return jsonify(a_dictionary) , 200 #exitoso
+    
+    conn.close()
+    return '', 404 #Album no encontrado
 
 
 #get de todos los albumes
 @app.route('/albums', methods=['GET'])
 def get_albums():
-
-    album = list(albums.values())
     
-    return jsonify(album), 200 #exitoso, este no falla
+    conn = sqlite3.connect('spotify.db')
+    columnas= ("id","name","genre","self","artist","tracks" , "artist_id")
+    query= """SELECT * FROM ALBUM;"""
+
+    cursor = conn.cursor()
+    albumes = cursor.execute(query).fetchall()
+    lista_albumes= []
+
+    for elemento in albumes:
+        zip_iterator = zip(columnas, elemento)
+        a_dictionary = dict(zip_iterator)
+        lista_albumes.append(a_dictionary)
+
+    conn.close()
+    return jsonify(lista_albumes), 200 #Siempre retorna exitoso
    
 
-#get de todos los albumes de un artista
+#get de todos los albumes de un artista  ## pa despues
 @app.route('/artists/<artist_ID>/albums', methods=['GET'])
 def get_albums_of_artist(artist_ID):
 
@@ -203,34 +276,50 @@ def get_albums_of_artist(artist_ID):
 @app.route('/albums/<album_ID>', methods=['DELETE'])
 def delete_album(album_ID):
 
-    if album_ID in albums.keys():
-        todas_canciones= list(tracks.values())
-        for cancion in todas_canciones:
-            if cancion['album_id']==album_ID:
-                del tracks[cancion["id"]]
+    conn = sqlite3.connect('spotify.db')
+    conn.execute("PRAGMA foreign_keys = ON")
+    query= """SELECT * FROM ALBUM WHERE id=? ;"""
 
-        del albums[album_ID]
+    cursor = conn.cursor()
+    album = cursor.execute(query, (album_ID,)).fetchone()
 
+
+    if album:
+        query_2= """DELETE FROM ALBUM WHERE id=? ;"""
+        cursor.execute(query_2, (album_ID,))
+        conn.commit()
         return '', 204 #album eliminado
 
     else:
         return '', 404 #album no encontrado
 
+
 #PUT de un album
 @app.route('/albums/<album_ID>/tracks/play', methods=['PUT'])
 def put_album(album_ID):
 
-    if album_ID in albums.keys():
-        todas_canciones= tracks.values()
-        for cancion in todas_canciones:
-            if cancion['album_id']==album_ID:
-                cancion["times_played"] +=1
+    conn = sqlite3.connect('spotify.db')
+    query= """SELECT * FROM ALBUM WHERE id=? ;"""
+    cursor = conn.cursor()
+    album = cursor.execute(query, (album_ID,)).fetchone()
 
-        return '', 200 #canciones repoducidas del album
-    else:
+
+    if not album:
+        conn.commit()
         return '', 404 #album no encontrado
 
 
+    query= """SELECT id, times_played FROM TRACK WHERE album_id=? ;"""
+    tracks = cursor.execute(query, (album_ID,)).fetchall()
+
+    for cancion in tracks:
+        times_played= cancion[1] + 1
+        query_2= '''UPDATE TRACK SET times_played = ? WHERE id = ?;'''
+        cursor.execute(query_2, (times_played, cancion[0],))
+        conn.commit()
+    
+    return '', 200 #Cancion reporducida
+        
 
 ###########################TRACKS###########################################
 
@@ -238,6 +327,10 @@ def put_album(album_ID):
 # Post de tracks
 @app.route('/albums/<album_ID>/tracks', methods=['POST'])
 def post_track(album_ID):
+    columnas= ("id","name","duration","times_played", "artist", "album","self", "album_id")
+
+
+    conn = sqlite3.connect('spotify.db')
     json_data = request.json
 
     if json_data ==None:
@@ -246,52 +339,99 @@ def post_track(album_ID):
     name = json_data["name"]
     duration = json_data["duration"]
 
-    if type(name)!=str or (type(duration)!=float and type(duration)!=int): ###ACA ESTOY CONSIDERANDO QUE PUEDE SER INT O FLOAT, creo que solo deberia ser float
+    if type(name)!=str or (type(duration)!=float and type(duration)!=int):
         return '', 400 #input invalido
 
-    if album_ID not in albums.keys():
-        return '', 422 #album no existe
+    #Revisar que exista el album
+    query= """SELECT * FROM ALBUM WHERE id=? ;"""
+    cursor = conn.cursor()
+    album = cursor.execute(query, (album_ID,)).fetchone()
+
+    if not album:
+        conn.close()
+        return '' , 422 #album no existe
+
 
     times_played = 0
     id_pre_cod= f"{name}:{album_ID}"
     ID = b64encode(id_pre_cod.encode()).decode('utf-8')[0:22]
-    
-    if ID in tracks.keys():
-        return jsonify(tracks[ID]), 409 #Cancion ya existe
+
+    query= """SELECT * FROM TRACK WHERE id=? ;"""
+    cursor = conn.cursor()
+    tracks = cursor.execute(query, (ID,)).fetchone()
+
+    if tracks:
+        zip_iterator = zip(columnas, tracks)
+        a_dictionary = dict(zip_iterator)
+        conn.close()
+        return jsonify(a_dictionary), 409 #Cancion ya existe
 
     Self = f"{link}/tracks/{ID}"
     album = f"{link}/albums/{album_ID}"
-    artist_ID=albums[album_ID]["artist_id"]
+
+    query= """SELECT * FROM ALBUM WHERE id=? ;"""
+    cursor = conn.cursor()
+    albums = cursor.execute(query, (album_ID,)).fetchone()
+
+    artist_ID = albums[6] #deberia ser el id del artista
     artist = f"{link}/artists/{artist_ID}"
 
-    #hacer if si ya existe
-    tracks[ID] = {"id": ID, "album_id": album_ID, "name" : name, "duration" : duration,"times_played": times_played, "self": Self, "artist" : artist, "album" : album}
+    query= """INSERT INTO TRACK (id, name, duration, times_played, artist, album, self, album_id)VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
+    record = (ID, name, duration, times_played, artist, album, Self, album_ID)
+    cursor.execute(query, record)
+    conn.commit()
+    conn.close()
 
-    return jsonify(tracks[ID]), 201 #cancion creada
+    
+    return jsonify({"id": ID, "album_id": album_ID, "name" : name, "duration" : duration,"times_played": times_played, "self": Self, "artist" : artist, "album" : album}), 201 #cancion creada
 
 
 #get de un track
 @app.route('/tracks/<track_ID>', methods=['GET'])
 def get_track(track_ID):
 
-    if track_ID not in tracks.keys():
-         return '', 404 #cancion no encontrada
+    conn = sqlite3.connect('spotify.db')
+    columnas= ("id","name","duration","times_played", "artist", "album","self", "album_id")
+    query= """SELECT * FROM TRACK WHERE id=? ;"""
 
-    track = tracks[track_ID]
-    return jsonify(track), 200 #cancion encontrada
+    cursor = conn.cursor()
+    track = cursor.execute(query, (track_ID,)).fetchone()
+
+    if track:
+        zip_iterator = zip(columnas, track)
+        a_dictionary = dict(zip_iterator)
+        conn.close()
+
+        return jsonify(a_dictionary) , 200 #exitoso
+
+
+    conn.close()
+    return '', 404 #TRack no encontrado
     
 
 
 #get de todos los tracks
 @app.route('/tracks', methods=['GET'])
 def get_tracks():
+    conn = sqlite3.connect('spotify.db')
+    columnas= ("id","name","duration","times_played", "artist", "album","self", "album_id")
+    query= """SELECT * FROM TRACK;"""
 
-    track = list(tracks.values())
+    cursor = conn.cursor()
+    tracks = cursor.execute(query).fetchall()
+    lista_tracks= []
 
-    return jsonify(track), 200 #No falla, retorna todos los tracks
+    for elemento in tracks:
+        zip_iterator = zip(columnas, elemento)
+        a_dictionary = dict(zip_iterator)
+        lista_tracks.append(a_dictionary)
+
+    conn.close()
+    return jsonify(lista_tracks), 200 #Siempre retorna exitoso
 
 
-#get de todos los tracks de un artista
+
+#get de todos los tracks de un artista   #FALTA ESTE TAMBIEN
 @app.route('/artists/<artist_ID>/tracks', methods=['GET'])
 def get_tracks_of_artist(artist_ID):
 
@@ -308,7 +448,7 @@ def get_tracks_of_artist(artist_ID):
     return jsonify(tracks_artista), 200 #Resultados obtenidos
 
 
-#get de todos los tracks de un album
+#get de todos los tracks de un album   #FALTA ESTE
 @app.route('/albums/<album_ID>/tracks', methods=['GET'])
 def get_tracks_of_album(album_ID):
 
@@ -329,22 +469,39 @@ def get_tracks_of_album(album_ID):
 #DELETE de un track
 @app.route('/tracks/<track_ID>', methods=['DELETE'])
 def delete_track(track_ID):
+    conn = sqlite3.connect('spotify.db')
+    query= """SELECT * FROM TRACK WHERE id=? ;"""
 
-    if track_ID in tracks.keys():
-        del tracks[track_ID]
+    cursor = conn.cursor()
+    track = cursor.execute(query, (track_ID,)).fetchone()
 
-        return '', 204 #cancion eliminada
+
+    if track:
+        query_2= """DELETE FROM TRACK WHERE id=? ;"""
+        cursor.execute(query_2, (track_ID,))
+        conn.commit()
+        return '', 204 #track eliminado
 
     else:
-        return '', 404 #cancion inexistente
+        return '', 404 #track no encontrado
+
+
 
 #PUT de un track
 @app.route('/tracks/<track_ID>/play', methods=['PUT'])
 def put_track(track_ID):
+    conn = sqlite3.connect('spotify.db')
+    query= """SELECT times_played FROM TRACK WHERE id=? ;"""
 
-    if track_ID in tracks.keys():
-        tracks[track_ID]["times_played"]+=1
+    cursor = conn.cursor()
+    track = cursor.execute(query, (track_ID,)).fetchone()
 
+
+    if track:
+        times_played= track[0] + 1
+        query_2= '''UPDATE TRACK SET times_played = ? WHERE id = ?;'''
+        cursor.execute(query_2, (times_played, track_ID,))
+        conn.commit()
         return '', 200 #Cancion reporducida
 
     else:
