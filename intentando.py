@@ -12,4 +12,4 @@ c.execute('''CREATE TABLE ALBUM (id text PRIMARY KEY, name text, genre text, sel
 
 
 c.execute('''DROP TABLE Track''')
-c.execute('''CREATE TABLE TRACK (id text PRIMARY KEY , name int, duration int, times_played int, artist text, album text, self text, album_id, FOREIGN KEY (album_id) REFERENCES ALBUM(id) ON DELETE CASCADE)''')
+c.execute('''CREATE TABLE TRACK (id text PRIMARY KEY , name int, duration float(24), times_played int, artist text, album text, self text, album_id, FOREIGN KEY (album_id) REFERENCES ALBUM(id) ON DELETE CASCADE)''')

@@ -25,6 +25,11 @@ def post_artist():
         conn.close()
         return '', 400 #input invalido
 
+    if len(json_data.keys())!=2 or "name" not in json_data.keys() or "age" not in json_data.keys():
+        conn.close()
+        return '', 400 #input invalido
+
+
     name = json_data["name"]
     age = json_data["age"]
 
@@ -164,6 +169,11 @@ def post_album(artist_ID):
 
     json_data = request.json
     if json_data ==None:
+        conn.close()
+        return '', 400 #input invalido
+
+
+    if len(json_data.keys())!=2 or "name" not in json_data.keys() or "genre" not in json_data.keys():
         conn.close()
         return '', 400 #input invalido
 
@@ -346,6 +356,10 @@ def post_track(album_ID):
     json_data = request.json
 
     if json_data ==None:
+        return '', 400 #input invalido
+
+    if len(json_data.keys())!=2 or "name" not in json_data.keys() or "duration" not in json_data.keys():
+        conn.close()
         return '', 400 #input invalido
 
     name = json_data["name"]
